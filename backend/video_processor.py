@@ -2,7 +2,7 @@
 
 Pipeline stages:
 1. cutting (REAL ffmpeg): detect silent segments > 0.6s and cut them out.
-2. transcribing (REAL Whisper via Emergent LLM key): word-level captions on cut audio.
+2. transcribing (REAL local Whisper): word-level captions on cut audio.
 3. rendering (REAL ffmpeg): burn stylized subtitles into the cut video.
 """
 from __future__ import annotations
@@ -265,109 +265,19 @@ async def transcribe_with_whisper(audio_path: str, language: str = None, task: s
     expose in the UI. `task="translate"` produces an English translation of
     non-English speech instead of a same-language transcript.
 
-    Order of preference:
-      1. Local faster-whisper (free, offline)   — default
-      2. Emergent/OpenAI Whisper API            — if EMERGENT_LLM_KEY set
-    Falls back to [] on any error (caller then uses synthetic captions).
+    Runs local faster-whisper (free, offline). Falls back to [] on any error
+    (caller then uses synthetic captions).
     """
-    backend = os.environ.get("WHISPER_BACKEND", "local").strip().lower()
     lang = None if language in (None, "auto") else language
-
-    if backend in ("local", "auto"):
-        try:
-            caps = await asyncio.to_thread(_transcribe_faster_whisper, audio_path, lang, task)
-            if caps:
-                log.info(f"Local Whisper produced {len(caps)} caption lines")
-                return caps
-            log.warning("Local Whisper returned no captions")
-        except Exception as e:
-            log.warning(f"faster-whisper unavailable/failed: {e}")
-        if backend == "local":
-            return []
-
-    # --- Emergent / OpenAI API fallback ---
     try:
-        from emergentintegrations.llm.openai import OpenAISpeechToText
+        caps = await asyncio.to_thread(_transcribe_faster_whisper, audio_path, lang, task)
+        if caps:
+            log.info(f"Local Whisper produced {len(caps)} caption lines")
+            return caps
+        log.warning("Local Whisper returned no captions")
     except Exception as e:
-        log.warning(f"emergentintegrations import failed: {e}")
-        return []
-
-    key = os.environ.get("EMERGENT_LLM_KEY")
-    if not key:
-        log.warning("EMERGENT_LLM_KEY not set; skipping real transcription")
-        return []
-
-    try:
-        stt = OpenAISpeechToText(api_key=key)
-        with open(audio_path, "rb") as f:
-            resp = await stt.transcribe(
-                file=f,
-                model="whisper-1",
-                response_format="verbose_json",
-                timestamp_granularities=["word"],
-            )
-    except Exception as e:
-        log.exception(f"Whisper transcription failed: {e}")
-        return []
-
-    words = getattr(resp, "words", None) or []
-    if not words:
-        # Fall back to segment-level if provided
-        segments = getattr(resp, "segments", None) or []
-        caps = []
-        for s in segments:
-            if (s.text or "").strip():
-                caps.append({"start": float(s.start), "end": float(s.end), "text": s.text.strip(), "words": []})
-        return caps
-
-    # Group words into caption windows of ~4-6 words or ~2.2s max
-    caps: List[Tuple[float, float, str]] = []
-    group_words: List = []
-    group_start = None
-    MAX_WORDS = 5
-    MAX_DUR = 2.2
-
-    def _flush():
-        if not group_words:
-            return
-        s = float(group_start)
-        e = float(getattr(group_words[-1], "end", s))
-        text = " ".join(getattr(w, "word", "").strip() for w in group_words).strip()
-        words = []
-        for w in group_words:
-            words.append({"start": float(getattr(w, "start", 0)), "end": float(getattr(w, "end", 0)), "word": getattr(w, "word", "").strip()})
-        
-        found_emoji = None
-        for w in words:
-            w_clean = re.sub(r'[^a-zA-Z0-9]', '', w["word"].lower())
-            if w_clean in EMOJI_MAP:
-                found_emoji = EMOJI_MAP[w_clean]
-                break
-        
-        if found_emoji and words:
-            last_end = words[-1]["end"]
-            words.append({"start": last_end, "end": last_end + 0.1, "word": found_emoji})
-            text += f" {found_emoji}"
-            e = last_end + 0.1
-
-        if text:
-            caps.append({"start": s, "end": e, "text": text, "words": words})
-
-    for w in words:
-        w_start = float(getattr(w, "start", 0.0))
-        w_end = float(getattr(w, "end", w_start))
-        if group_start is None:
-            group_start = w_start
-            group_words = [w]
-            continue
-        if len(group_words) >= MAX_WORDS or (w_end - group_start) > MAX_DUR:
-            _flush()
-            group_start = w_start
-            group_words = [w]
-        else:
-            group_words.append(w)
-    _flush()
-    return caps
+        log.warning(f"faster-whisper unavailable/failed: {e}")
+    return []
 
 
 def _srt_time(t: float) -> str:

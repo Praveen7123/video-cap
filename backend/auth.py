@@ -56,17 +56,32 @@ async def get_current_user(request: Request, db) -> dict:
 
     user = await db.users.find_one({"id": supabase_uid})
     if not user:
-        user = {
-            "id": supabase_uid,
-            "email": email,
-            "name": email.split("@")[0] if email else "User",
-            "plan": "free",
-            "credit_seconds_used": 0,
-            "translation_seconds_used": 0,
-            "role": "user",
-            "created_at": datetime.now(timezone.utc).isoformat(),
-        }
-        await db.users.insert_one(user)
+        # A row with this email may already exist from before the move to
+        # Supabase Auth (keyed by our old internally-generated id) — re-key
+        # it (and anything referencing that old id) instead of inserting a
+        # second row, which would collide on the unique email constraint.
+        legacy = await db.users.find_one({"email": email}) if email else None
+        if legacy:
+            old_id = legacy["id"]
+            await db.users.update_one({"id": old_id}, {"$set": {"id": supabase_uid}})
+            await db.projects.update_one({"user_id": old_id}, {"$set": {"user_id": supabase_uid}})
+            try:
+                await db.team_members.update_one({"user_id": old_id}, {"$set": {"user_id": supabase_uid}})
+            except Exception:
+                pass
+            user = {**legacy, "id": supabase_uid}
+        else:
+            user = {
+                "id": supabase_uid,
+                "email": email,
+                "name": email.split("@")[0] if email else "User",
+                "plan": "free",
+                "credit_seconds_used": 0,
+                "translation_seconds_used": 0,
+                "role": "user",
+                "created_at": datetime.now(timezone.utc).isoformat(),
+            }
+            await db.users.insert_one(user)
 
         # Link any pending team invites (created before this user existed).
         try:

@@ -34,7 +34,7 @@ export function VideoPreview({ project, videoRef, playing, setPlaying, onTimeUpd
     };
     sync(musicAudioRef);
     sync(cleanAudioRef);
-  }, [playing, current]);
+  }, [playing, current, videoRef]);
 
   useEffect(() => {
     if (videoRef.current) {
@@ -48,7 +48,7 @@ export function VideoPreview({ project, videoRef, playing, setPlaying, onTimeUpd
         if (musicAudioRef.current) musicAudioRef.current.muted = false;
       }
     }
-  }, [muted, project.clean_audio_path]);
+  }, [muted, project.clean_audio_path, videoRef]);
 
   useEffect(() => { if (videoRef.current && (!project.clean_audio_path || muted)) videoRef.current.volume = Math.min(1, Math.max(0, volume)); }, [volume, videoRef, project.clean_audio_path, muted]);
 
@@ -95,7 +95,7 @@ export function VideoPreview({ project, videoRef, playing, setPlaying, onTimeUpd
       const { videoWidth, videoHeight } = videoRef.current;
       if (videoWidth && videoHeight) setAspect(videoWidth / videoHeight);
     }
-  }, [project.aspect_ratio, videoBust]);
+  }, [project.aspect_ratio, videoBust, videoRef]);
 
   // Portrait/square: cap the height and let width follow. Landscape: fill the
   // available width and let height follow. Either way the box matches the video.

@@ -37,7 +37,7 @@ export default function Dashboard() {
   }, 3000);
 
 
-  const upload = async (file) => {
+  const upload = useCallback(async (file) => {
     setError("");
     setUploading(true);
     try {
@@ -68,14 +68,14 @@ export default function Dashboard() {
       setError(e.response?.data?.detail || e.message);
       setUploading(false);
     }
-  };
+  }, [user, language, activeWorkspace, navigate]);
 
   const handleDrop = useCallback((e) => {
     e.preventDefault();
     setDragActive(false);
     const f = e.dataTransfer.files?.[0];
     if (f) upload(f);
-  }, []);
+  }, [upload]);
 
   const handleSelect = (e) => {
     const f = e.target.files?.[0];

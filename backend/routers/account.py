@@ -1,8 +1,8 @@
 from fastapi import APIRouter, HTTPException, Request
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, Field
 
 import deps
-from auth import verify_password, hash_password, get_current_user
+from auth import get_current_user
 from schemas.serializers import user_public
 from config import VALID_SUBTITLE_STYLES
 from services.storage_service import get_user_storage_bytes, get_plan_storage_bytes
@@ -12,16 +12,6 @@ router = APIRouter(prefix="/account")
 
 class UpdateNameIn(BaseModel):
     name: str = Field(min_length=1, max_length=80)
-
-
-class ChangeEmailIn(BaseModel):
-    new_email: EmailStr
-    current_password: str
-
-
-class ChangePasswordIn(BaseModel):
-    current_password: str
-    new_password: str = Field(min_length=6)
 
 
 class BrandKitIn(BaseModel):
@@ -37,31 +27,6 @@ async def update_name(payload: UpdateNameIn, request: Request):
     await deps.db.users.update_one({"id": user["id"]}, {"$set": {"name": payload.name.strip()}})
     updated = await deps.db.users.find_one({"id": user["id"]})
     return user_public(updated)
-
-
-@router.post("/email")
-async def change_email(payload: ChangeEmailIn, request: Request):
-    user = await get_current_user(request, deps.db)
-    full = await deps.db.users.find_one({"id": user["id"]})
-    if not verify_password(payload.current_password, full["password_hash"]):
-        raise HTTPException(400, "Current password is incorrect")
-    new_email = payload.new_email.lower().strip()
-    existing = await deps.db.users.find_one({"email": new_email})
-    if existing and existing["id"] != user["id"]:
-        raise HTTPException(400, "Email already in use")
-    await deps.db.users.update_one({"id": user["id"]}, {"$set": {"email": new_email}})
-    updated = await deps.db.users.find_one({"id": user["id"]})
-    return user_public(updated)
-
-
-@router.post("/password")
-async def change_password(payload: ChangePasswordIn, request: Request):
-    user = await get_current_user(request, deps.db)
-    full = await deps.db.users.find_one({"id": user["id"]})
-    if not verify_password(payload.current_password, full["password_hash"]):
-        raise HTTPException(400, "Current password is incorrect")
-    await deps.db.users.update_one({"id": user["id"]}, {"$set": {"password_hash": hash_password(payload.new_password)}})
-    return {"success": True}
 
 
 @router.get("/storage")

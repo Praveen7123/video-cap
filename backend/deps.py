@@ -4,11 +4,14 @@ Routers/services must `import deps` and reference `deps.db` at call time —
 never `from deps import db`, which would bind the `None` placeholder below
 and never see the real handle assigned in `init_db()`.
 """
-import uuid
+import os
+import asyncio
+import logging
 from datetime import datetime, timezone
 
 import db as dbmod
-from auth import hash_password, verify_password
+
+log = logging.getLogger("clipcut.deps")
 
 db = None
 db_client = None
@@ -29,26 +32,40 @@ async def init_db():
 
 
 async def _seed_admin():
-    import os
+    """Ensure a Supabase Auth user + matching profile row exists for the
+    admin account. Auth identity lives in Supabase Auth now (not our own
+    bcrypt scheme) — created via the Admin API using the service role key."""
     admin_email = os.environ.get("ADMIN_EMAIL", "admin@clipcut.app")
     admin_password = os.environ.get("ADMIN_PASSWORD", "Admin@12345")
-    existing = await db.users.find_one({"email": admin_email})
-    if not existing:
-        await db.users.insert_one({
-            "id": str(uuid.uuid4()),
-            "email": admin_email,
-            "name": "Admin",
-            "password_hash": hash_password(admin_password),
-            "plan": "studio",
-            "credit_seconds_used": 0,
-            "role": "admin",
-            "created_at": datetime.now(timezone.utc).isoformat(),
-        })
-    elif not verify_password(admin_password, existing["password_hash"]):
-        await db.users.update_one(
-            {"email": admin_email},
-            {"$set": {"password_hash": hash_password(admin_password)}},
+
+    if await db.users.find_one({"email": admin_email}):
+        return  # profile already provisioned
+
+    try:
+        from supabase import create_client
+        auth_client = create_client(os.environ["SUPABASE_URL"], os.environ["SUPABASE_SERVICE_KEY"])
+        resp = await asyncio.to_thread(
+            lambda: auth_client.auth.admin.create_user({
+                "email": admin_email,
+                "password": admin_password,
+                "email_confirm": True,
+            })
         )
+        supabase_uid = resp.user.id
+    except Exception as e:
+        log.warning(f"Could not create Supabase Auth admin user (may already exist there): {e}")
+        return
+
+    await db.users.insert_one({
+        "id": supabase_uid,
+        "email": admin_email,
+        "name": "Admin",
+        "plan": "studio",
+        "credit_seconds_used": 0,
+        "translation_seconds_used": 0,
+        "role": "admin",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    })
 
 
 def close_db():

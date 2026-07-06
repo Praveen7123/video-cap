@@ -1,43 +1,39 @@
 import axios from "axios";
+import { supabase } from "@/lib/supabaseClient";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 export const API = `${BACKEND_URL}/api`;
 
 const api = axios.create({
   baseURL: API,
-  withCredentials: true,
 });
 
-// The access token expires after 60 minutes. On a 401, try the refresh-token
-// cookie once to mint a new one and retry the original request silently —
-// otherwise a long editing session just crashes every polling call once the
-// token expires. If refresh itself fails, send the user back to login.
-let refreshPromise = null;
+// Attach the current Supabase session token as a Bearer header on every
+// request — this (not cookies) is what actually works with the frontend and
+// backend on different domains, since browsers increasingly block cross-site
+// cookies regardless of SameSite settings.
+api.interceptors.request.use(async (config) => {
+  const { data } = await supabase.auth.getSession();
+  const token = data?.session?.access_token;
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
 
+// Supabase's client SDK refreshes the access token silently in the
+// background before it expires, so a 401 here means the session is genuinely
+// gone (expired refresh token, revoked, etc.) — send the user back to login
+// rather than retrying, since there's nothing left to refresh.
 api.interceptors.response.use(
   (res) => res,
   async (error) => {
-    const original = error.config;
     const status = error.response?.status;
-    const isAuthCall = original?.url?.includes("/auth/");
-
-    if (status !== 401 || isAuthCall || original._retried) {
-      return Promise.reject(error);
-    }
-    original._retried = true;
-
-    try {
-      if (!refreshPromise) {
-        refreshPromise = api.post("/auth/refresh").finally(() => { refreshPromise = null; });
-      }
-      await refreshPromise;
-      return api(original);
-    } catch (e) {
+    const isAuthCall = error.config?.url?.includes("/auth/");
+    if (status === 401 && !isAuthCall) {
       if (window.location.pathname !== "/login" && window.location.pathname !== "/") {
         window.location.href = "/login";
       }
-      return Promise.reject(error);
     }
+    return Promise.reject(error);
   }
 );
 

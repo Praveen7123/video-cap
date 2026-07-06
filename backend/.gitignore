@@ -1,0 +1,11 @@
+.env
+storage/
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+*.mp4
+*.jpg
+_rt3.mp4
+test_out.txt

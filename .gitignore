@@ -1,0 +1,28 @@
+# Backend Excluded Files
+backend/.env
+backend/__pycache__/
+backend/.pytest_cache/
+backend/storage/uploads/
+backend/test_out.txt
+backend/storage/*.mp4
+backend/storage/*.mp3
+backend/storage/*.png
+backend/storage/*.json
+
+# Frontend Excluded Files
+frontend/node_modules/
+frontend/build/
+frontend/.env
+frontend/.env.local
+frontend/.env.development.local
+frontend/.env.test.local
+frontend/.env.production.local
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+
+# General/IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

@@ -1,0 +1,103 @@
+{
+  "theme_archetype": {
+    "name": "Organic & Earthy (Modified for specific rules)",
+    "theme": "Light",
+    "description": "Warm, premium, and effortless. Focus on whitespace, softness, and elegant typography."
+  },
+  "colors": {
+    "background": "#F5F3EE",
+    "primary_text": "#0A0A0A",
+    "accent": "#E8622C",
+    "secondary_text": "#6B6B6B",
+    "surface": "#FAFAF8",
+    "contrast_surface": "#0A0A0A",
+    "contrast_text": "#FFFFFF",
+    "border_subtle": "rgba(10, 10, 10, 0.05)"
+  },
+  "typography": {
+    "font_families": {
+      "heading": "Outfit, General Sans, or Satoshi (Geometric Sans-Serif)",
+      "body": "Outfit, General Sans, or Satoshi (Geometric Sans-Serif)"
+    },
+    "rules": {
+      "headlines": "Large confident headlines mixing regular + bold weights in the same line (e.g., <span class='font-light'>Cut</span> <span class='font-bold'>Faster</span>).",
+      "eyebrows": "Generous letter spacing (tracking-widest), uppercase, small text size.",
+      "labels": "Small numbered labels for dividers (e.g., '05 —————— 13')."
+    }
+  },
+  "layout_and_spacing": {
+    "general": "Whitespace-heavy layouts. Avoid cramped elements. Use p-12 to p-32 for section padding.",
+    "shapes": "Soft large rounded shapes (circles/blobs) as decorative background elements.",
+    "borders": "No harsh borders. Separate sections with whitespace and subtle shadows, not lines.",
+    "dividers": "Thin horizontal divider lines with small numbered labels as section progress indicators.",
+    "accents": "Small arrow/chevron accents (◄ ►) next to eyebrow labels, in the orange accent color (#E8622C)."
+  },
+  "components": {
+    "buttons": {
+      "primary": "Background #E8622C, text white, rounded-full or large radius. Hover state should slightly lighten or scale up.",
+      "secondary": "Background #0A0A0A, text white, rounded-full.",
+      "outline": "Transparent background, border #0A0A0A, text #0A0A0A."
+    },
+    "cards": {
+      "default": "Background #FAFAF8, subtle shadow, soft rounded corners (e.g., rounded-3xl), no borders.",
+      "contrast": "Background #0A0A0A, text white, soft rounded corners. Use as a 'dark mode module' within a light page."
+    },
+    "inputs": {
+      "style": "Background transparent or #FAFAF8, subtle focus ring in #E8622C, no harsh borders."
+    },
+    "icons": {
+      "library": "lucide-react",
+      "style": "Clean, minimal, matching text color or accent color."
+    }
+  },
+  "pages": {
+    "Landing": {
+      "hero": "Mixed-weight headline, overlapping circular cards (one black, one white).",
+      "features": "Feature highlights with lots of whitespace.",
+      "pricing": "4-tier pricing: Free, Editor, Creator (Most Popular), Studio."
+    },
+    "Auth": {
+      "layout": "Centered soft white card on warm cream background. Minimal inputs."
+    },
+    "Dashboard": {
+      "content": "Project cards grid, credits indicator (e.g., 'Credits remaining: 45')."
+    },
+    "Upload_Flow": {
+      "steps": [
+        "1. Drag-drop upload area",
+        "2. Subtitle style gallery",
+        "3. Color/font picker",
+        "4. Render quality picker",
+        "5. Review + submit"
+      ]
+    },
+    "Job_Status": {
+      "flow": "Progress indicator with states: Queued -> Transcribing -> Cutting -> Rendering -> Done.",
+      "preview": "Video preview player + download button upon completion."
+    },
+    "Billing": {
+      "content": "Current plan details, usage stats, upgrade options."
+    }
+  },
+  "media": {
+    "image_urls": {
+      "hero_creator": {
+        "url": "https://images.pexels.com/photos/9040531/pexels-photo-9040531.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "description": "Creator at desk, to be used in the landing page hero section or overlapping circular cards."
+      },
+      "vlog_sample": {
+        "url": "https://images.pexels.com/photos/36697488/pexels-photo-36697488.jpeg",
+        "description": "Sample video thumbnail or workflow preview image."
+      },
+      "creator_portrait": {
+        "url": "https://images.pexels.com/photos/34037221/pexels-photo-34037221.jpeg",
+        "description": "Secondary portrait for testimonials or community section."
+      }
+    },
+    "rules": "Never use placeholder text/images. Always use provided URLs or matching aesthetic images."
+  },
+  "testing": {
+    "rules": "All interactive and key informational elements MUST include a 'data-testid' attribute in kebab-case."
+  },
+  "instructions_to_main_agent": "Implement all designs exactly as per this JSON. Ensure strict adherence to the #F5F3EE background, #E8622C accent, and typography rules (mixed weights in headings). Prioritize whitespace and soft shapes. Create numbered dividers and use ◄ ► chevron text characters next to eyebrows. Use React and TailwindCSS."
+}

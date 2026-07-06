@@ -1,0 +1,9 @@
+-- DEPRECATED — this file is no longer the source of truth for the schema.
+--
+-- It drifted from the live database at least twice this session (aspect_ratio
+-- and clean_audio_path existed live but were never added here), which is
+-- exactly the class of bug the migrations/ folder now exists to prevent.
+--
+-- Schema changes now live as numbered files in migrations/, applied in order.
+-- Run `python migrate.py` from backend/ to apply pending ones (or print the
+-- SQL to paste manually, if no DATABASE_URL is configured yet).

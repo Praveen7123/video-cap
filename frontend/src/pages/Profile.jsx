@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { AppShell } from "@/components/Layout";
 import { useAuth } from "@/context/AuthContext";
 import api, { formatApiErrorDetail } from "@/lib/api";
+import { supabase } from "@/lib/supabaseClient";
 import { toast } from "sonner";
 
 export default function Profile() {
@@ -345,13 +346,13 @@ export default function Profile() {
         </div>
       </main>
 
-      {emailModal && <ChangeEmailModal onClose={() => setEmailModal(false)} onSaved={setUser} />}
-      {passwordModal && <ChangePasswordModal onClose={() => setPasswordModal(false)} />}
+      {emailModal && <ChangeEmailModal onClose={() => setEmailModal(false)} currentEmail={user?.email} />}
+      {passwordModal && <ChangePasswordModal onClose={() => setPasswordModal(false)} currentEmail={user?.email} />}
     </AppShell>
   );
 }
 
-function ChangeEmailModal({ onClose, onSaved }) {
+function ChangeEmailModal({ onClose, currentEmail }) {
   const [newEmail, setNewEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -361,9 +362,15 @@ function ChangeEmailModal({ onClose, onSaved }) {
     setError("");
     setSaving(true);
     try {
-      const { data } = await api.post("/account/email", { new_email: newEmail, current_password: password });
-      onSaved(data);
-      toast.success("Email updated");
+      // Re-verify identity with the current password before letting the
+      // email change through — Supabase's updateUser() trusts the existing
+      // session alone, so this re-check is the only thing standing in for
+      // the "current_password" confirmation the old backend route used to do.
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email: currentEmail, password });
+      if (signInError) throw new Error("Current password is incorrect");
+      const { error: updateError } = await supabase.auth.updateUser({ email: newEmail });
+      if (updateError) throw updateError;
+      toast.success("Check your new email address to confirm the change.");
       onClose();
     } catch (e) {
       setError(formatApiErrorDetail(e.response?.data?.detail) || e.message);
@@ -382,7 +389,7 @@ function ChangeEmailModal({ onClose, onSaved }) {
   );
 }
 
-function ChangePasswordModal({ onClose }) {
+function ChangePasswordModal({ onClose, currentEmail }) {
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -396,7 +403,10 @@ function ChangePasswordModal({ onClose }) {
     if (next !== confirm) { setError("Passwords do not match"); return; }
     setSaving(true);
     try {
-      await api.post("/account/password", { current_password: current, new_password: next });
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email: currentEmail, password: current });
+      if (signInError) throw new Error("Current password is incorrect");
+      const { error: updateError } = await supabase.auth.updateUser({ password: next });
+      if (updateError) throw updateError;
       toast.success("Password updated");
       onClose();
     } catch (e) {

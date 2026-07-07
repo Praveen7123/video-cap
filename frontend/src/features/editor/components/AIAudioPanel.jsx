@@ -1,4 +1,4 @@
-import { Sparkles, Loader2, Volume2, Activity, Zap } from "lucide-react";
+import { Sparkles, Loader2, Volume2, Activity } from "lucide-react";
 
 export function AIAudioPanel({ cleaningAudio, onCleanAudio }) {
   return (
@@ -31,21 +31,6 @@ export function AIAudioPanel({ cleaningAudio, onCleanAudio }) {
           </div>
           <div className="flex items-center gap-2 text-sm text-editor-muted w-full justify-center">
             <div className="w-1.5 h-1.5 rounded-full bg-editor-cta" /> Real-time Processing
-          </div>
-        </div>
-      </div>
-
-      <div className="p-4 border-t border-line mt-auto bg-card-2">
-        <div className="flex items-center gap-4">
-          <div className="w-10 h-10 rounded-xl bg-editor-well border border-line flex items-center justify-center shrink-0">
-            <Zap className="w-5 h-5 text-editor-accent" />
-          </div>
-          <div className="flex flex-col">
-            <span className="text-sm font-medium text-white mb-0.5">Remaining Credits</span>
-            <div className="flex items-center gap-2">
-              <span className="bg-editor-well border border-line text-editor-muted text-xs px-2.5 py-0.5 rounded-full font-medium">3</span>
-              <span className="text-xs text-editor-muted">credits available</span>
-            </div>
           </div>
         </div>
       </div>
